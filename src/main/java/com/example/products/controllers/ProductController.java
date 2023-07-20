@@ -3,6 +3,7 @@ package com.example.products.controllers;
 import com.example.products.dtos.ProductRecordDTO;
 import com.example.products.models.ProductModel;
 import com.example.products.repositories.ProductRepository;
+import com.example.products.services.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,74 +22,51 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class ProductController {
     @Autowired
     ProductRepository productRepository;
+    @Autowired
+    ProductService productService;
 
     @PostMapping("/products")
     public ResponseEntity<ProductModel> saveProduct(@RequestBody @Valid ProductRecordDTO productRecordDTO) {
-        System.out.println("productRecordDTO" + productRecordDTO);
-        //Chamou a depedência dessa forma pois é necessário transferir as infos do DTO para o Model
         var productModel = new ProductModel();
-
-        //Aqui copia o valor para o model
-        BeanUtils.copyProperties(productRecordDTO, productModel);
-
-        //Na hora de salvar tem que retornar no body o que foi salvo, e o CREATED é equivalente ao 201
-        return ResponseEntity.status(HttpStatus.CREATED).body(productRepository.save(productModel));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.saveProduct(productModel, productRecordDTO));
     }
 
     @GetMapping("/products")
     public ResponseEntity<List<ProductModel>> getAllProducts() {
-        List<ProductModel> productList = productRepository.findAll();
-        if (!productList.isEmpty()) {
-            for (ProductModel product : productList) {
-                UUID uuid = product.getIdProduct();
-                product.add(linkTo(methodOn(ProductController.class).getProductById(uuid)).withSelfRel());
-            }
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(productList);
+        return ResponseEntity.status(HttpStatus.OK).body(productService.getAllProducts());
     }
 
     @GetMapping("/products/{uuid}")
     public ResponseEntity<Object> getProductById(@PathVariable(value = "uuid") UUID uuid) {
-        //Aqui vai dar esse erro de opcional, tenho que pegar o retorno do repositorio antes e validar se vazio ou não
-        Optional<ProductModel> productByID = productRepository.findById(uuid);
-
-        if (productByID.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("O producto com este ID não existe");
+        Optional<ProductModel> productById = productService.getProductById(uuid);
+        if (productById.isEmpty()) {
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("O id solicitado não existe");
         }
-
-        productByID.get().add(linkTo(methodOn(ProductController.class).getAllProducts()).withSelfRel());
-
-        return ResponseEntity.status(HttpStatus.OK).body(productByID.get());
+        return ResponseEntity.status(HttpStatus.OK).body(productService.getProductById(uuid));
     }
 
     @PutMapping("/products/{uuid}")
     public ResponseEntity<Object> putProductByID(@PathVariable(value = "uuid") UUID uuid,
                                                  @RequestBody @Valid ProductRecordDTO productRecordDTO) {
-        Optional<ProductModel> productByID = productRepository.findById(uuid);
 
-        if (productByID.isEmpty()) {
+        ProductModel product = productService.putProductByID(uuid, productRecordDTO);
+
+        if (product == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("O produto com este ID não existe");
         }
 
-        //Varíavel temporaria para fazer a edição
-        var productModel = productByID.get();
-
-        BeanUtils.copyProperties(productRecordDTO, productModel);
-
-        return ResponseEntity.status(HttpStatus.OK).body(productRepository.save(productModel));
+        return ResponseEntity.status(HttpStatus.OK).body(product);
     }
     @DeleteMapping("/products/{uuid}")
     public ResponseEntity<Object> deleteProductByID(@PathVariable(value = "uuid") UUID uuid,
                                                     @RequestBody @Valid ProductRecordDTO productRecordDTO) {
 
-        Optional<ProductModel> productByID = productRepository.findById(uuid);
+        Object product = productService.deleteProductByID(uuid, productRecordDTO);
 
-        if (productByID.isEmpty()) {
+        if (product == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("O produto com este ID não existe");
         }
 
-        //Não preciso copiar ou chamar o model para salvar em cima pois já sabemos o produto a deletar pelo UUID
-        productRepository.delete(productByID.get());
         return ResponseEntity.status(HttpStatus.OK).body("Produto deletado com sucesso");
     }
 }
