@@ -19,24 +19,25 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
+@RequestMapping(path = "api/v1/products")
 public class ProductController {
     @Autowired
     ProductRepository productRepository;
     @Autowired
     ProductService productService;
 
-    @PostMapping("/products")
+    @PostMapping
     public ResponseEntity<ProductModel> saveProduct(@RequestBody @Valid ProductRecordDTO productRecordDTO) {
         var productModel = new ProductModel();
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.saveProduct(productModel, productRecordDTO));
     }
 
-    @GetMapping("/products")
+    @GetMapping
     public ResponseEntity<List<ProductModel>> getAllProducts() {
         return ResponseEntity.status(HttpStatus.OK).body(productService.getAllProducts());
     }
 
-    @GetMapping("/products/{uuid}")
+    @GetMapping("/{uuid}")
     public ResponseEntity<Object> getProductById(@PathVariable(value = "uuid") UUID uuid) {
         Optional<ProductModel> productById = productService.getProductById(uuid);
         if (productById.isEmpty()) {
@@ -45,7 +46,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(productService.getProductById(uuid));
     }
 
-    @PutMapping("/products/{uuid}")
+    @PutMapping("/{uuid}")
     public ResponseEntity<Object> putProductByID(@PathVariable(value = "uuid") UUID uuid,
                                                  @RequestBody @Valid ProductRecordDTO productRecordDTO) {
 
@@ -57,7 +58,7 @@ public class ProductController {
 
         return ResponseEntity.status(HttpStatus.OK).body(product);
     }
-    @DeleteMapping("/products/{uuid}")
+    @DeleteMapping("/{uuid}")
     public ResponseEntity<Object> deleteProductByID(@PathVariable(value = "uuid") UUID uuid,
                                                     @RequestBody @Valid ProductRecordDTO productRecordDTO) {
 
