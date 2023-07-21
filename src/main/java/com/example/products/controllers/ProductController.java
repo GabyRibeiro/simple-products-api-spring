@@ -43,7 +43,7 @@ public class ProductController {
         if (productById.isEmpty()) {
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("O id solicitado não existe");
         }
-        return ResponseEntity.status(HttpStatus.OK).body(productService.getProductById(uuid));
+        return ResponseEntity.status(HttpStatus.OK).body(productById);
     }
 
     @PutMapping("/{uuid}")
